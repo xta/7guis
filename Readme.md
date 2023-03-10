@@ -16,4 +16,4 @@ Caveat Emptor. This repository is educational (learning SwiftUI) and does not de
 
 ## Author
 
-[Rex Feng](twitter.com/rexfeng) 2022
+[Rex Feng](rexfeng.com) 2022 - 2023
