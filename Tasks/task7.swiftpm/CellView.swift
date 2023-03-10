@@ -7,32 +7,58 @@
 
 import SwiftUI
 
-struct Cell: View {
-    @State private var location = "" // location/key in GridData. ex: "A1"
-    @ObservedObject private var data: GridData
+struct Cell: View, Hashable, Identifiable {
+    @State private var location = "" // unique location/key in GridData. ex: "A1"
 
-    // `text` is a very basic text value. It does NOT differentiate between the formula used in the CellView and the displayed text label.
-    // When the cell is deselected, the text value is crudely parsed and converted to the updated display text.
-    // As such, there is no way to check for other cells which depend on this cell's value.
-    @State var text = ""
+    @ObservedObject private var inputData: GridData
+    @ObservedObject private var displayData: GridData
+
+    // these String values get their value from their GridData source
+    var input: String { inputData.data[location] ?? "" }
+    var display: String { displayData.data[location] ?? "" }
+
+    // $fieldText is used for the TextField()
+    @State var fieldText: String = ""
 
     @FocusState private var textIsFocused: Bool
 
-    init(location: String, mapping: GridData, text: String) {
+    init(location: String, inputData: GridData, displayData: GridData) {
         self.location = location
-        self.data = mapping
-        self.text = text
+        self.inputData = inputData
+        self.displayData = displayData
     }
+
+    // Identifiable
+    var id: String { location }
+
+    // Hashable
+    func hash(into hasher: inout Hasher) { hasher.combine(location) }
+
+    // Equatable
+    static func ==(lhs: Cell, rhs: Cell) -> Bool { lhs.location == rhs.location }
 
     var body: some View {
         HStack {
-            TextField("", text: $text)
+            TextField("", text: $fieldText)
                 .padding()
                 .focused($textIsFocused)
                 .onChange(of: textIsFocused) { isFocused in
                     if (!isFocused) {
-                        data.storeCellValue(key: location, value: text)
-                        parseInput(input: text)
+                        // field is unselected, switch to display value
+
+                        // store $fieldText value in inputData
+                        inputData.storeCellValue(key: location, value: fieldText)
+
+                        // optionally parse the input
+                        parseInput(input: fieldText)
+
+                        // switch $fieldText to display version
+                        fieldText = display
+                    } else {
+                        // field is selected, switch to input value
+
+                        // switch $fieldText to input version
+                        fieldText = input
                     }
                 }
 
@@ -41,6 +67,11 @@ struct Cell: View {
                     Label("", systemImage: "checkmark.circle")
                 }
             }
+        }
+        .onAppear {
+            // setup init values
+            self.location = location
+            self.fieldText = display
         }
         .frame(width: 180, height: 50)
         .background(textIsFocused ? .yellow : .white)
@@ -52,17 +83,22 @@ struct Cell: View {
 
     // parseInput() is a VERY basic cell text parser and processor. Do not expect most spreadsheet cell functions here
     private func parseInput(input: String) {
-        // if text starts with "=", then parse, else do not parse
-        guard input.hasPrefix("=") else { return }
+        // only parse if text starts with "="
+        guard input.hasPrefix("=") else {
+            // store our unmodified display text
+            displayData.storeCellValue(key: location, value: input)
+            return
+        }
 
         // remove first letter ("=")
         var inputText = String(input.dropFirst())
 
-        let gridKeys = data.getAllKeys()
+        let gridKeys = inputData.getAllKeys()
         // note: it is not efficient to iterate through all keys (A1, A2, ..., Z99)
         for key in gridKeys {
             if (key != location && inputText.contains(key)) {
-                if let value = data.getCellValue(key: key) {
+                // lookup external (display) value of target Cell
+                if let value = displayData.getCellValue(key: key) {
                     // replace occurrences of key with key's text value
                     inputText = inputText.replacingOccurrences(of: key, with: value)
                 }
@@ -77,8 +113,8 @@ struct Cell: View {
             }
         }
 
-        data.storeCellValue(key: location, value: inputText)
-        text = inputText
+        // store our modified display text
+        displayData.storeCellValue(key: location, value: inputText)
     }
 
 }

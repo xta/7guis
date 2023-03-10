@@ -40,4 +40,9 @@ class GridData: ObservableObject {
         return Array(data.keys)
     }
 
+    // a column is A1, B1, ..., Y1, Z1
+    func getColumnKeys(row: Int) -> [String] {
+        return alphabet.map { "\($0)\(row)" }
+    }
+
 }
