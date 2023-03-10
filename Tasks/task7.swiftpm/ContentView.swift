@@ -15,6 +15,10 @@ struct ContentView: View {
 
     @State private var columns: [Int: [Cell]] = [:]
 
+    // references tracks a String key (ex: "A1") and those cells which depend on it (ex: ["A2", "A3"]
+    // for example, this means cell A2 (and A3) have a reference to A1 (ex: "=A1")
+    @State private var references: [String: [String]] = [:]
+
     var body: some View {
         if #available(iOS 16.0, *) {
             VStack {
@@ -64,6 +68,11 @@ struct ContentView: View {
         }
     }
 
+    func cellInputUpdated(location: String, input: String) {
+        let calculator = Calculator(inputData: inputData, displayData: displayData)
+        calculator.cellValueUpdated(location: location, input: input, references: &references)
+    }
+
     private func setupColumns() {
         // columns 1 - 99. each prefixed with A - Z.
         // a row is A1, B1, ..., Y1, Z1
@@ -72,7 +81,7 @@ struct ContentView: View {
             let keys = inputData.getColumnKeys(row: number)
             var column: [Cell] = []
             for key in keys {
-                let cell = Cell(location: key, inputData: inputData, displayData: displayData)
+                let cell = Cell(location: key, inputData: inputData, displayData: displayData, callback: cellInputUpdated)
                 column.append(cell)
             }
             columns[number] = column

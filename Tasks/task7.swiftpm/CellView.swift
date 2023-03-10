@@ -21,11 +21,15 @@ struct Cell: View, Hashable, Identifiable {
     @State var fieldText: String = ""
 
     @FocusState private var textIsFocused: Bool
+    @State private var editMode = false
 
-    init(location: String, inputData: GridData, displayData: GridData) {
+    var inputValueDidUpdate: (String, String) -> Void
+
+    init(location: String, inputData: GridData, displayData: GridData, callback: @escaping (String, String) -> Void) {
         self.location = location
         self.inputData = inputData
         self.displayData = displayData
+        self.inputValueDidUpdate = callback
     }
 
     // Identifiable
@@ -39,32 +43,44 @@ struct Cell: View, Hashable, Identifiable {
 
     var body: some View {
         HStack {
-            TextField("", text: $fieldText)
-                .padding()
-                .focused($textIsFocused)
-                .onChange(of: textIsFocused) { isFocused in
-                    if (!isFocused) {
-                        // field is unselected, switch to display value
+            if editMode {
+                TextField("", text: $fieldText)
+                    .padding()
+                    .focused($textIsFocused)
+                    .onChange(of: textIsFocused) { isFocused in
+                        if (!isFocused) {
+                            // field is unselected, switch to display value
 
-                        // store $fieldText value in inputData
-                        inputData.storeCellValue(key: location, value: fieldText)
+                            // store $fieldText value in inputData
+                            inputData.storeCellValue(key: location, value: fieldText)
 
-                        // optionally parse the input
-                        parseInput(input: fieldText)
+                            // optionally parse the input
+                            self.inputValueDidUpdate(location, fieldText)
 
-                        // switch $fieldText to display version
-                        fieldText = display
-                    } else {
-                        // field is selected, switch to input value
+                            // switch $fieldText to display version
+                            fieldText = display
+                        } else {
+                            // field is selected, switch to input value
 
-                        // switch $fieldText to input version
-                        fieldText = input
+                            // switch $fieldText to input version
+                            fieldText = input
+                        }
                     }
-                }
+            } else {
+                Text(display)
+            }
 
-            if textIsFocused {
-                Button(action: acceptValue) {
+            if editMode {
+                Button(action: hideField) {
                     Label("", systemImage: "checkmark.circle")
+                }
+            } else {
+                // Instead of using this edit button, I'd rather not include it.
+                // However, I need to show the display text above. And cannot rely on `fieldText = display` to run above when `display` value changes
+                Button(action: showField) {
+                    Label("", systemImage: "square.and.pencil")
+                        .foregroundColor(.gray)
+                        .opacity(0.4)
                 }
             }
         }
@@ -77,44 +93,19 @@ struct Cell: View, Hashable, Identifiable {
         .background(textIsFocused ? .yellow : .white)
     }
 
-    private func acceptValue() {
-        textIsFocused = false
+    private func showField() {
+        textIsFocused = true
+        editMode = true
     }
 
-    // parseInput() is a VERY basic cell text parser and processor. Do not expect most spreadsheet cell functions here
-    private func parseInput(input: String) {
-        // only parse if text starts with "="
-        guard input.hasPrefix("=") else {
-            // store our unmodified display text
-            displayData.storeCellValue(key: location, value: input)
-            return
+    private func hideField() {
+        textIsFocused = false
+
+        // there has to be a better way to do this... need to trigger the TextField() .onChange event first
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            editMode = false
         }
 
-        // remove first letter ("=")
-        var inputText = String(input.dropFirst())
-
-        let gridKeys = inputData.getAllKeys()
-        // note: it is not efficient to iterate through all keys (A1, A2, ..., Z99)
-        for key in gridKeys {
-            if (key != location && inputText.contains(key)) {
-                // lookup external (display) value of target Cell
-                if let value = displayData.getCellValue(key: key) {
-                    // replace occurrences of key with key's text value
-                    inputText = inputText.replacingOccurrences(of: key, with: value)
-                }
-            }
-        }
-
-        // very naive equation resolving
-        if (inputText.contains("+") || inputText.contains("-") || inputText.contains("*") || inputText.contains("/")) {
-            let expression = NSExpression(format: inputText)
-            if let result = expression.expressionValue(with: nil, context: nil) as? Double {
-                inputText = String(result)
-            }
-        }
-
-        // store our modified display text
-        displayData.storeCellValue(key: location, value: inputText)
     }
 
 }
