@@ -10,7 +10,7 @@ struct ContentView: View {
                 .font(.headline)
                 .padding(.bottom)
 
-            HStack {
+            VStack(alignment: .leading) {
                 HStack {
                     TextField("Enter degrees",
                               text: $celsius,
@@ -18,10 +18,13 @@ struct ContentView: View {
                         fahrenheit = DegreeConverter().getFahrenheit(celsius: celsius)
                     })
                     .textFieldStyle(.roundedBorder)
-                    Text("Celsius")
+                    Text("° Celsius")
                 }
-                .fixedSize(horizontal: true, vertical: true)
-                Text("=")
+                .fixedSize(horizontal: true, vertical: false)
+                HStack {
+                    Text("=")
+                        .padding(.leading, 12)
+                }
                 HStack {
                     TextField("Enter degrees",
                               text: $fahrenheit,
@@ -29,9 +32,9 @@ struct ContentView: View {
                         celsius = DegreeConverter().getCelsius(fahrenheit: fahrenheit)
                     })
                     .textFieldStyle(.roundedBorder)
-                    Text("Fahrenheit")
+                    Text("° Fahrenheit")
                 }
-                .fixedSize(horizontal: true, vertical: true)
+                .fixedSize(horizontal: true, vertical: false)
             }
         }
     }
