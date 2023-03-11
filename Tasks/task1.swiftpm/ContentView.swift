@@ -6,14 +6,16 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Text("Counter")
-                .font(.title)
                 .padding(.bottom)
 
             HStack {
                 Text("\(value)")
-                Button("Count", action: {
+
+                Button {
                     value += 1
-                })
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
             }
         }
     }
