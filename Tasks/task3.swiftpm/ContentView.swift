@@ -22,12 +22,13 @@ struct ContentView: View {
                 .padding(.bottom)
 
             VStack {
-                Text("One way or return")
+                Text("One way or round trip?")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                 Toggle(isOn: $returnOn) {
-                    Text("Round trip?")
+                    Text(returnOn ? "Round trip" : "One way")
                 }
+                .disabled(showConfirmation)
             }
             .padding(.bottom)
 
@@ -37,6 +38,7 @@ struct ContentView: View {
                     .font(.headline)
                 TextField("Enter date (DD.MM.YYYY)",
                           text: $fromString)
+                .disabled(showConfirmation)
                 .background(fromBackground)
                 .onChange(of: fromString) { newValue in
                     fromDate = DateStringWrapper(date: fromString)
@@ -51,6 +53,7 @@ struct ContentView: View {
                     .font(.headline)
                 TextField("Enter date (DD.MM.YYYY)",
                           text: $toString)
+                .disabled(showConfirmation)
                 .foregroundColor(returnOn ? .black : .gray)
                 .background(toBackground)
                 .onChange(of: toString) { newValue in
@@ -68,11 +71,16 @@ struct ContentView: View {
 
                 showConfirmation = true
             })
-                .buttonStyle(.borderedProminent)
-                .disabled(!bookButtonEnabled)
+            .buttonStyle(.borderedProminent)
+            .disabled(!bookButtonEnabled || showConfirmation)
 
             if (showConfirmation) {
                 Text(confirmationMessage)
+                    .padding([.top, .bottom])
+                Button("Reset", action: {
+                    showConfirmation = false
+                    confirmationMessage = ""
+                })
             }
         }
         .frame(maxWidth: 200)
@@ -101,6 +109,8 @@ struct ContentView: View {
 
     func updateState() {
         showConfirmation = false
+
+        let redColor = Color(UIColor(red: 0.99, green: 0.65, blue: 0.65, alpha: 1.00))
 
         if (returnOn) {
             // round trip
@@ -135,13 +145,13 @@ struct ContentView: View {
                 if (fromDate.valid) {
                     fromBackground = .white
                 } else {
-                    fromBackground = .red
+                    fromBackground = redColor
                 }
 
                 if (toDate.valid) {
                     toBackground = .white
                 } else {
-                    toBackground = .red
+                    toBackground = redColor
                 }
 
             }
@@ -152,7 +162,7 @@ struct ContentView: View {
             if (fromDate.valid) {
                 fromBackground = .white
             } else {
-                fromBackground = .red
+                fromBackground = redColor
             }
         }
     }
