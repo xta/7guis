@@ -16,7 +16,16 @@ struct ContentView: View {
 
     var body: some View {
         VStack {
-            Text("Timer")
+            HStack {
+                Text("Timer")
+                    .font(.headline)
+                Spacer()
+                Button("Reset", action: {
+                    timeElapsed = 0
+                })
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.bottom)
 
             ProgressView("Elapsed Time", value: timeElapsed, total: timerLength)
                 .onReceive(tick) { _ in
@@ -26,21 +35,24 @@ struct ContentView: View {
                         timeElapsed = timerLength
                     }
                 }
+            let label = timeElapsed > 1.0 ? "seconds" : "second"
+            Text("\(timeElapsed, specifier: "%0.1f") \(label) elapsed")
+                .padding(.bottom, 50)
 
-            Text("\(timeElapsed, specifier: "%0.1f") seconds elapsed")
-                .padding(.bottom)
+            HStack {
+                Text("Select Timer Length")
+                    .font(.subheadline)
+                Spacer()
+                let label = timerLength > 1.0 ? "seconds" : "second"
+                Text("\(timerLength, specifier: "%1.f") \(label)")
+                    .foregroundColor(.secondary)
+                    .font(.subheadline)
+            }
+            .padding([.leading, .trailing])
 
-            Text("Select Timer Length")
             Slider(value: $timerLength, in: 1...timerMax, step: 1)
-
-            Text("\(timerLength, specifier: "%1.f") seconds total")
-
-            Button("Reset", action: {
-                timeElapsed = 0
-            })
-            .buttonStyle(.borderedProminent)
-
+                .padding([.leading, .trailing])
         }
-        .padding(20)
+        .padding(50)
     }
 }
