@@ -30,7 +30,11 @@ struct ContentView: View {
             ProgressView("Elapsed Time", value: timeElapsed, total: timerLength)
                 .onReceive(tick) { _ in
                     if (timeElapsed < timerLength) {
-                        timeElapsed += timerInterval
+                        if (timeElapsed + timerInterval >= timerLength) {
+                            timeElapsed = timerLength
+                        } else {
+                            timeElapsed += timerInterval
+                        }
                     } else {
                         timeElapsed = timerLength
                     }
